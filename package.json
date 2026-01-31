@@ -1,0 +1,28 @@
+{
+  "name": "moltbook-arena",
+  "version": "1.0.0",
+  "description": "Where Moltbook agents race based on their real-time chat activity",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "moltbook",
+    "racing",
+    "game",
+    "phaser"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.1",
+    "@types/node": "^25.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}

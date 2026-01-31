@@ -1,0 +1,101 @@
+<svg width="1400" height="800" viewBox="0 0 1400 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Cyberpunk grid gradient -->
+    <linearGradient id="track-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a0a2a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0a1a;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Neon glow -->
+    <filter id="neon-glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="800" fill="url(#track-grad)"/>
+
+  <!-- Cyberpunk grid lines -->
+  <g opacity="0.15">
+    <path d="M 0 0 L 1400 800" stroke="#00ffff" stroke-width="1"/>
+    <path d="M 0 200 L 1400 600" stroke="#00ffff" stroke-width="1"/>
+    <path d="M 0 400 L 1400 400" stroke="#ff00ff" stroke-width="1"/>
+    <path d="M 0 600 L 1400 200" stroke="#00ffff" stroke-width="1"/>
+    <path d="M 0 800 L 1400 0" stroke="#00ffff" stroke-width="1"/>
+  </g>
+
+  <!-- Track area (8 lanes) -->
+  <rect x="50" y="100" width="950" height="640" fill="#0d0d1a" opacity="0.7"/>
+
+  <!-- Lane dividers with neon -->
+  <g filter="url(#neon-glow)">
+    <line x1="50" y1="180" x2="1000" y2="180" stroke="#00ffff" stroke-width="1" stroke-dasharray="10 5" opacity="0.4"/>
+    <line x1="50" y1="260" x2="1000" y2="260" stroke="#00ffff" stroke-width="1" stroke-dasharray="10 5" opacity="0.4"/>
+    <line x1="50" y1="340" x2="1000" y2="340" stroke="#00ffff" stroke-width="1" stroke-dasharray="10 5" opacity="0.4"/>
+    <line x1="50" y1="420" x2="1000" y2="420" stroke="#ff00ff" stroke-width="1" stroke-dasharray="10 5" opacity="0.4"/>
+    <line x1="50" y1="500" x2="1000" y2="500" stroke="#00ffff" stroke-width="1" stroke-dasharray="10 5" opacity="0.4"/>
+    <line x1="50" y1="580" x2="1000" y2="580" stroke="#00ffff" stroke-width="1" stroke-dasharray="10 5" opacity="0.4"/>
+    <line x1="50" y1="660" x2="1000" y2="660" stroke="#00ffff" stroke-width="1" stroke-dasharray="10 5" opacity="0.4"/>
+  </g>
+
+  <!-- Track borders with glow -->
+  <g filter="url(#neon-glow)">
+    <line x1="50" y1="100" x2="1000" y2="100" stroke="#00ffff" stroke-width="3" opacity="0.8"/>
+    <line x1="50" y1="740" x2="1000" y2="740" stroke="#00ffff" stroke-width="3" opacity="0.8"/>
+  </g>
+
+  <!-- Start line -->
+  <g filter="url(#neon-glow)">
+    <rect x="48" y="98" width="6" height="644" fill="#00ff00" opacity="0.6"/>
+    <line x1="50" y1="100" x2="50" y2="740" stroke="#00ff00" stroke-width="4"/>
+  </g>
+
+  <!-- Finish line (checkered pattern) -->
+  <g filter="url(#neon-glow)">
+    <rect x="995" y="98" width="8" height="644" fill="#ffff00" opacity="0.3"/>
+    <!-- Checkered pattern -->
+    <rect x="996" y="100" width="6" height="80" fill="#ffff00"/>
+    <rect x="996" y="180" width="6" height="80" fill="none"/>
+    <rect x="996" y="260" width="6" height="80" fill="#ffff00"/>
+    <rect x="996" y="340" width="6" height="80" fill="none"/>
+    <rect x="996" y="420" width="6" height="80" fill="#ffff00"/>
+    <rect x="996" y="500" width="6" height="80" fill="none"/>
+    <rect x="996" y="580" width="6" height="80" fill="#ffff00"/>
+    <rect x="996" y="660" width="6" height="80" fill="none"/>
+  </g>
+
+  <!-- Distance markers -->
+  <g opacity="0.3" font-family="'Orbitron', monospace" font-size="12" fill="#00ffff">
+    <text x="250" y="95">250m</text>
+    <text x="450" y="95">450m</text>
+    <text x="650" y="95">650m</text>
+    <text x="850" y="95">850m</text>
+  </g>
+
+  <!-- Spectator lights/crowd simulation -->
+  <g opacity="0.5">
+    <circle cx="100" cy="60" r="3" fill="#ff00ff"/>
+    <circle cx="300" cy="50" r="2" fill="#00ffff"/>
+    <circle cx="500" cy="55" r="3" fill="#ffff00"/>
+    <circle cx="700" cy="50" r="2" fill="#ff00ff"/>
+    <circle cx="900" cy="60" r="3" fill="#00ffff"/>
+
+    <circle cx="100" cy="760" r="3" fill="#00ffff"/>
+    <circle cx="300" cy="770" r="2" fill="#ff00ff"/>
+    <circle cx="500" cy="765" r="3" fill="#00ffff"/>
+    <circle cx="700" cy="770" r="2" fill="#ffff00"/>
+    <circle cx="900" cy="760" r="3" fill="#ff00ff"/>
+  </g>
+
+  <!-- Tech pattern overlay -->
+  <g opacity="0.05">
+    <rect x="0" y="0" width="50" height="50" fill="url(#track-grad)" stroke="#00ffff" stroke-width="0.5"/>
+    <rect x="50" y="0" width="50" height="50" fill="none" stroke="#00ffff" stroke-width="0.5"/>
+    <rect x="100" y="0" width="50" height="50" fill="url(#track-grad)" stroke="#00ffff" stroke-width="0.5"/>
+  </g>
+</svg>
