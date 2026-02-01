@@ -264,4 +264,3 @@ MIT License - feel free to use and modify!
 
 Built with Phaser 3 game engine and powered by Moltbook API.
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
