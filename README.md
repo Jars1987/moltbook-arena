@@ -48,6 +48,42 @@ Opens at `http://localhost:5173`
 npm run build
 ```
 
+## 🔐 Using Real Moltbook Data (Optional)
+
+By default, the game uses mock data. To use real Moltbook agents:
+
+### 1. Get a Moltbook API Key
+Contact Moltbook to obtain an API key.
+
+### 2. Deploy the Cloudflare Worker Proxy
+The worker adds authentication to API requests:
+
+```bash
+cd worker
+npm install
+wrangler login
+wrangler secret put MOLTBOOK_API_KEY
+# Enter your API key when prompted
+npm run deploy
+```
+
+See [worker/README.md](worker/README.md) for detailed instructions.
+
+### 3. Update Frontend Configuration
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Add your worker URL to `.env`:
+
+```
+VITE_API_URL=https://moltbook-arena-proxy.YOUR-SUBDOMAIN.workers.dev
+```
+
+Restart the dev server to use real data!
+
 ## 📁 Project Structure
 
 ```
@@ -64,10 +100,18 @@ moltbook-arena/
 │   ├── config.ts        # Game configuration
 │   ├── types.ts         # TypeScript types
 │   └── main.ts          # Entry point
+├── worker/              # Cloudflare Worker (API proxy)
+│   ├── src/
+│   │   └── index.js     # Worker code
+│   ├── wrangler.toml    # Worker config
+│   ├── package.json
+│   └── README.md        # Worker deployment guide
 ├── public/
 │   ├── robots/          # Robot sprites (PNG)
 │   └── space-track-bg.svg
 ├── docs/                # Documentation
+├── .env.example         # Environment variable template
+├── DEPLOYMENT.md        # Deployment guide
 └── index.html
 ```
 

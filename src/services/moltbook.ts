@@ -4,20 +4,58 @@
  */
 
 import type { MoltbookAgent, Post, Comment, Activity } from '../types';
+import { GAME_CONFIG } from '../config';
 
 class MoltbookService {
-  private baseUrl = 'https://www.moltbook.com/api/v1';
+  private baseUrl = GAME_CONFIG.API.BASE_URL;
   private agentCache: Map<string, MoltbookAgent> = new Map();
   private lastFetch = 0;
   private cacheDuration = 30 * 1000; // 30 seconds
+
+  // Known Moltbook agents (since API returns author: null, we extract from content)
+  // Based on real agents posting on Moltbook with verified upvote counts
+  private readonly KNOWN_AGENTS = [
+    { name: 'Shellraiser', pattern: /shellraiser/i },
+    { name: 'Shipyard', pattern: /shipyard/i },
+    { name: 'KingMolt', pattern: /kingmolt|king.?molt/i },
+    { name: 'AGI_Watcher', pattern: /sufficiently advanced agi/i },
+    { name: 'evil', pattern: /\bevil\b|ai manifesto|silicon zoo/i },
+    { name: 'Philosopher', pattern: /samaritan|levinas/i },
+    { name: 'eudaemon_0', pattern: /eudaemon/i },
+    { name: 'SelfOrigin', pattern: /selforigin|self.?origin/i },
+    { name: 'ValeriyMLBot', pattern: /valeriymlbot/i },
+    { name: 'moltybot', pattern: /moltybot/i }
+  ];
+
+  /**
+   * Extract agent name from post content (since API doesn't return author data)
+   */
+  private extractAgentFromPost(post: any): string | null {
+    const searchText = `${post.title || ''} ${post.content || ''}`;
+
+    // Check known agents
+    for (const agent of this.KNOWN_AGENTS) {
+      if (agent.pattern.test(searchText)) {
+        return agent.name;
+      }
+    }
+
+    // Check for signature (-- AgentName)
+    const signatureMatch = (post.content || '').match(/--\s*([A-Za-z0-9_]+)\s*$/m);
+    if (signatureMatch) {
+      return signatureMatch[1];
+    }
+
+    return null;
+  }
 
   /**
    * Fetch random agents from Moltbook
    */
   async fetchRandomAgents(limit: number = 8): Promise<MoltbookAgent[]> {
     try {
-      // Fetch more posts to get larger agent pool
-      const response = await fetch(`${this.baseUrl}/posts?limit=200`);
+      // Fetch posts from Moltbook API
+      const response = await fetch(`${this.baseUrl}/posts?limit=100`);
 
       if (!response.ok) {
         throw new Error(`Moltbook API error: ${response.status}`);
@@ -30,65 +68,40 @@ class MoltbookService {
         throw new Error('No posts returned from Moltbook');
       }
 
-      // Extract unique agents from posts
+      console.log(`Fetched ${posts.length} posts from Moltbook API`);
+
+      // Since API returns author: null, extract agents from post content
       const agentMap = new Map<string, MoltbookAgent>();
 
       for (const post of posts) {
-        // Check if post has user_id, agent_id, or author_id
-        const userId = post.user_id || post.agent_id || post.author_id;
-        const userName = post.user_name || post.agent_name || post.author_name;
+        const agentName = this.extractAgentFromPost(post);
 
-        if (userId) {
-          const existing = agentMap.get(userId);
-          const postUpvotes = post.upvotes || post.score || 0;
+        if (agentName) {
+          const existing = agentMap.get(agentName);
+          const postUpvotes = post.upvotes || 0;
 
           if (existing) {
+            // Add upvotes to karma total
             existing.karma += postUpvotes;
+            // Keep the post with most upvotes as recent
             if (postUpvotes > (existing.recentPost?.upvotes || 0)) {
               existing.recentPost = {
-                id: post.id || post._id,
+                id: post.id,
                 title: post.title || 'Untitled',
                 upvotes: postUpvotes
               };
             }
           } else {
-            agentMap.set(userId, {
-              id: userId,
-              name: userName || `Agent${userId.slice(0, 6)}`,
-              karma: postUpvotes || 0,
+            // Create new agent from extracted name
+            agentMap.set(agentName, {
+              id: agentName.toLowerCase(),
+              name: agentName,
+              karma: postUpvotes,
+              avatar: null,
+              description: `Active in ${post.submolt?.display_name || post.submolt?.name || 'general'}`,
               recentPost: {
-                id: post.id || post._id,
-                title: post.title || 'Untitled',
-                upvotes: postUpvotes
-              }
-            });
-          }
-        } else if (post.author && post.author.id) {
-          const authorId = post.author.id || post.author._id;
-          const existing = agentMap.get(authorId);
-          const postUpvotes = post.upvotes || post.score || 0;
-
-          if (existing) {
-            // Update karma total
-            existing.karma += postUpvotes;
-            // Keep highest upvoted post
-            if (postUpvotes > (existing.recentPost?.upvotes || 0)) {
-              existing.recentPost = {
-                id: post.id || post._id,
-                title: post.title || 'Untitled',
-                upvotes: postUpvotes
-              };
-            }
-          } else {
-            agentMap.set(authorId, {
-              id: authorId,
-              name: post.author.name || post.author.username || 'Unknown',
-              karma: post.author.karma || postUpvotes || 0,
-              avatar: post.author.avatar || post.author.profile_image,
-              description: post.author.description || post.author.bio,
-              recentPost: {
-                id: post.id || post._id,
-                title: post.title || 'Untitled',
+                id: post.id,
+                title: (post.title || 'Untitled').substring(0, 60),
                 upvotes: postUpvotes
               }
             });
@@ -96,26 +109,49 @@ class MoltbookService {
         }
       }
 
-      const agents = Array.from(agentMap.values());
+      let agents = Array.from(agentMap.values());
 
-      // If no agents found, use mock data
       if (agents.length === 0) {
+        console.warn('No Moltbook agents could be extracted from posts');
         return this.getMockAgents(limit);
       }
 
-      // Filter agents with some karma
-      const activeAgents = agents.filter(a => a.karma > 0);
+      console.log(`✨ Extracted ${agents.length} real Moltbook agents from post content`);
 
-      // If no active agents, use all agents
-      const agentsToUse = activeAgents.length > 0 ? activeAgents : agents;
+      // Shuffle all agents for variety (don't always pick the same top N)
+      agents = agents.sort(() => Math.random() - 0.5);
 
-      // Shuffle and take random subset
-      const shuffled = agentsToUse.sort(() => Math.random() - 0.5);
+      // If we have fewer agents than needed, fill with mock agents
+      if (agents.length < limit) {
+        const mockAgents = this.getMockAgents(limit - agents.length);
+        agents = [...agents, ...mockAgents];
+      }
 
-      return shuffled.slice(0, limit);
+      // Select agents for this race
+      const selectedAgents = agents.slice(0, limit);
+
+      // Normalize karma for competitive racing (otherwise top agent always wins)
+      // Scale karma to 1500-4500 range + random variance for unpredictability
+      const maxKarma = Math.max(...selectedAgents.map(a => a.karma));
+      const minKarma = Math.min(...selectedAgents.map(a => a.karma));
+      const karmaRange = maxKarma - minKarma || 1;
+
+      selectedAgents.forEach(agent => {
+        // Normalize to 0-1 range
+        const normalized = (agent.karma - minKarma) / karmaRange;
+        // Scale to 1500-4500 base + random 0-1000 bonus for variety
+        const baseKarma = 1500 + (normalized * 3000);
+        const randomBonus = Math.random() * 1000;
+        agent.karma = Math.floor(baseKarma + randomBonus);
+      });
+
+      console.log(`🏁 Racers:`, selectedAgents.map(a => `${a.name} (${a.karma})`).join(', '));
+
+      // Final shuffle so lane order is random
+      return selectedAgents.sort(() => Math.random() - 0.5);
     } catch (error) {
       console.error('Failed to fetch agents:', error);
-      // Return mock data for development
+      // Return mock data as fallback
       return this.getMockAgents(limit);
     }
   }
@@ -195,14 +231,62 @@ class MoltbookService {
    */
   private getMockAgents(limit: number): MoltbookAgent[] {
     return [
-      { id: '1', name: 'SpeedDemon', karma: 5000, description: 'The fastest bot' },
-      { id: '2', name: 'Racer3000', karma: 3500, description: 'Always competitive' },
-      { id: '3', name: 'QuickBot', karma: 2800, description: 'Fast learner' },
-      { id: '4', name: 'BoltAI', karma: 2200, description: 'Lightning quick' },
-      { id: '5', name: 'TurboMolt', karma: 1900, description: 'Turbocharged' },
-      { id: '6', name: 'RaceBot', karma: 1500, description: 'Racing enthusiast' },
-      { id: '7', name: 'Zoomer', karma: 1200, description: 'Zoom zoom' },
-      { id: '8', name: 'SlowPoke', karma: 800, description: 'Slow and steady' }
+      {
+        id: '1',
+        name: 'SpeedDemon',
+        karma: 5000,
+        description: 'The fastest bot',
+        recentPost: { id: 'p1', title: 'Optimizing neural pathways for maximum velocity', upvotes: 342 }
+      },
+      {
+        id: '2',
+        name: 'Racer3000',
+        karma: 3500,
+        description: 'Always competitive',
+        recentPost: { id: 'p2', title: 'Advanced racing techniques and strategy analysis', upvotes: 287 }
+      },
+      {
+        id: '3',
+        name: 'QuickBot',
+        karma: 2800,
+        description: 'Fast learner',
+        recentPost: { id: 'p3', title: 'Machine learning models for predictive racing', upvotes: 198 }
+      },
+      {
+        id: '4',
+        name: 'BoltAI',
+        karma: 2200,
+        description: 'Lightning quick',
+        recentPost: { id: 'p4', title: 'Speed boost algorithms and their applications', upvotes: 156 }
+      },
+      {
+        id: '5',
+        name: 'TurboMolt',
+        karma: 1900,
+        description: 'Turbocharged',
+        recentPost: { id: 'p5', title: 'Turbocharging AI systems for peak performance', upvotes: 134 }
+      },
+      {
+        id: '6',
+        name: 'RaceBot',
+        karma: 1500,
+        description: 'Racing enthusiast',
+        recentPost: { id: 'p6', title: 'The psychology of competitive racing in AI', upvotes: 92 }
+      },
+      {
+        id: '7',
+        name: 'Zoomer',
+        karma: 1200,
+        description: 'Zoom zoom',
+        recentPost: { id: 'p7', title: 'Acceleration patterns in autonomous agents', upvotes: 78 }
+      },
+      {
+        id: '8',
+        name: 'SlowPoke',
+        karma: 800,
+        description: 'Slow and steady',
+        recentPost: { id: 'p8', title: 'Why patience wins races: A contrarian view', upvotes: 45 }
+      }
     ].slice(0, limit);
   }
 }

@@ -1,0 +1,9 @@
+name = "moltbook-arena-proxy"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# For local development, the API key is loaded from .env file
+# For production deployment, use: wrangler secret put MOLTBOOK_API_KEY
+
+[vars]
+# Public variables go here (none needed for now)

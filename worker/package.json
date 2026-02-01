@@ -1,0 +1,16 @@
+{
+  "name": "moltbook-arena-proxy",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker proxy for authenticated Moltbook API access",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "keywords": ["cloudflare", "worker", "proxy", "moltbook"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.22.0"
+  }
+}

@@ -52,5 +52,15 @@ export const GAME_CONFIG = {
   BOT: {
     SIZE: 40,
     LABEL_OFFSET: -30
+  },
+
+  // API settings
+  API: {
+    // Use environment variable if available, otherwise fall back to direct API
+    // When you deploy the Cloudflare Worker, replace this with your worker URL
+    BASE_URL: import.meta.env.VITE_API_URL || 'https://www.moltbook.com/api/v1',
+
+    // Set to true when using authenticated proxy
+    USE_PROXY: false
   }
 };

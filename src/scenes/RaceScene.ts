@@ -398,23 +398,19 @@ export class RaceScene extends Phaser.Scene {
       return b.distance - a.distance;
     });
 
-    // Calculate positions handling ties (within 1 pixel = tie)
-    const positions: number[] = [];
-    let currentPosition = 1;
-
-    for (let i = 0; i < sorted.length; i++) {
-      if (i > 0 && Math.abs(sorted[i].distance - sorted[i - 1].distance) < 1) {
-        // Tied with previous bot
-        positions.push(positions[i - 1]);
-      } else {
-        positions.push(currentPosition);
-      }
-      currentPosition++;
-    }
+    // Calculate current racing positions for non-finished bots
+    const finishedCount = this.bots.filter(b => b.finished).length;
+    const racingBots = this.bots.filter(b => !b.finished).sort((a, b) => b.distance - a.distance);
+    const racingPositions = new Map<string, number>();
+    racingBots.forEach((bot, idx) => {
+      // Racing bots start from position after all finished bots
+      racingPositions.set(bot.agent.id, finishedCount + idx + 1);
+    });
 
     // Create leaderboard rows
     sorted.forEach((bot, index) => {
-      const position = positions[index];
+      // For finished bots, show their finish order. For racing bots, show current position
+      const position = bot.finished ? bot.finishOrder : (racingPositions.get(bot.agent.id) || 1);
       const positionStr = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}.`;
       const status = bot.finished ? '✓' : '';
       const yPos = index * 60;
@@ -472,6 +468,8 @@ export class RaceScene extends Phaser.Scene {
         if (bot.finished && bot.finishOrder === -1) {
           bot.finishOrder = this.nextFinishOrder;
           this.nextFinishOrder++;
+          // Update leaderboard immediately when bot finishes
+          this.updateLeaderboard();
         }
       });
 
@@ -571,10 +569,12 @@ export class RaceScene extends Phaser.Scene {
       this.resultsModal.add(karma);
       yOffset += 30;
 
-      if (winners[0].agent.recentPost) {
-        const post = this.add.text(0, yOffset, `Recent: "${winners[0].agent.recentPost.title}"`, {
-          fontSize: '14px',
-          color: '#888888',
+      // Show recent post if available
+      if (winners[0].agent.recentPost && winners[0].agent.recentPost.title) {
+        const postTitle = winners[0].agent.recentPost.title.substring(0, 60); // Limit length
+        const post = this.add.text(0, yOffset, `Recent: "${postTitle}"`, {
+          fontSize: '16px',
+          color: '#00ffff',
           fontFamily: GAME_CONFIG.FONTS.BODY,
           wordWrap: { width: modalWidth - 60 }
         });
@@ -582,6 +582,14 @@ export class RaceScene extends Phaser.Scene {
         this.resultsModal.add(post);
         yOffset += 120; // More spacing before robot (5% lower)
       } else {
+        // Show placeholder if no post data
+        const noPost = this.add.text(0, yOffset, 'No recent activity', {
+          fontSize: '14px',
+          color: '#666666',
+          fontFamily: GAME_CONFIG.FONTS.BODY
+        });
+        noPost.setOrigin(0.5);
+        this.resultsModal.add(noPost);
         yOffset += 90;
       }
 
